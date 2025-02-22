@@ -1,0 +1,112 @@
+name: Build Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      zet:
+        description: 'A link to a ziti-edge-tunnel to use'
+        required: false
+        default: 'https://github.com/openziti/ziti/releases'
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - 'release-*'
+      - 'beta-release-*'
+
+env:
+  BUILD_CONFIG: "Release"
+  BUILDNUMBER: ${{github.run_number}}
+
+jobs:
+  build:
+    name: Build the Ziti Desktop Edge for Windows Installer Package
+    runs-on: windows-latest
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWSKMS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWSKMS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWSKMS_REGION }}
+      AWS_KEY_ID: ${{ secrets.AWSKMS_KEY_ID }}
+      SIGNING_CERT: ${{ secrets.SIGNING_CERT_2022_b64 }}
+      ADV_INST_KEY: ${{ secrets.ADV_INST_KEY }}
+      JFROG_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+      gh_ci_key: ${{ secrets.GH_CI_KEY }}
+      ZITI_DEBUG: "yes_please"
+      OPENZITI_P12_PASS: ${{ secrets.OPENZITI_P12_PASS }}
+      OPENZITI_P12_PASS_2024: ${{ secrets.OPENZITI_P12_PASS_2024 }}
+      OPENZITI_P12: ${{ secrets.OPENZITI_P12 }}
+      OPENZITI_P12_2024: ${{ secrets.OPENZITI_P12_2024 }}
+
+    steps:
+      - name: Set up environment variable
+        run: echo "ZITI_EDGE_TUNNEL_BUILD=${{ github.event.inputs.zet }}" >> $GITHUB_ENV
+      - name: Git Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: microsoft/setup-msbuild@v2
+      - name: Set up Go 
+        uses: actions/setup-go@v5
+      - if: github.event_name == 'push'
+        run: echo "GIT_BRANCH=$($env:GITHUB_REF.replace('refs/heads/', ''))" >> $env:GITHUB_ENV
+      - if: github.event_name == 'pull_request'
+        run: echo "GIT_BRANCH=$env:GITHUB_HEAD_REF" >> $env:GITHUB_ENV
+      - name: Setup secrets
+        run: |
+          echo "${env:SIGNING_CERT}" > WinSign.b64
+          echo "${env:OPENZITI_P12}" > OPENZITI_P12.b64
+          echo "${env:OPENZITI_P12_2024}" > OPENZITI_P12_2024.b64
+          C:\Windows\System32\certutil.exe -decode WinSign.b64 Installer/WinSign.p12
+          C:\Windows\System32\certutil.exe -decode OPENZITI_P12.b64 Installer/openziti.p12
+          C:\Windows\System32\certutil.exe -decode OPENZITI_P12_2024.b64 Installer/openziti_2024.p12
+      - name: Trying to run choco install.
+        run: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+      - name: "Install Choco needs: wixtoolset ninja"
+        run: choco install wixtoolset ninja --yes
+      - name: Setting up ADV_INST_VERSION env var from adv-inst-version
+        run: echo "ADV_INST_VERSION=$(cat .\adv-inst-version)" >> $env:GITHUB_ENV
+      - name: "Install Choco needs: advanced-installer "
+        run: choco install advanced-installer --version="$(cat .\adv-inst-version)" --yes
+      - name: Setting up VERSION env var
+        run: echo "VERSION=$(cat .\version)" >> $env:GITHUB_ENV
+      - uses: nuget/setup-nuget@v2
+        with:
+          nuget-api-key: ${{ secrets.NuGetAPIKey }}
+          nuget-version: '5.8.1'
+      - name: Restore nuget packages
+        run: nuget restore ZitiDesktopEdge.sln
+      - shell: pwsh
+        name: Register Advanced Installer
+        run: |
+          .\Installer\reg.ps1 -key "${env:ADV_INST_KEY}"
+      - if: github.ref == 'refs/heads/release-next'
+        name: Install ziti-ci
+        uses: netfoundry/ziti-ci@v1
+      - if: github.ref == 'refs/heads/release-next'
+        name: Configure ziti-ci
+        run: C:\Users\runneradmin\go\bin\ziti-ci configure-git
+      - name: Build UI and Assemble Installer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ziti_ci_gpg_key: ${{ secrets.ZITI_CI_GPG_KEY }}
+          ziti_ci_gpg_key_id: ${{ secrets.ZITI_CI_GPG_KEY_ID }}
+        run: powershell -File .\Installer\build.ps1
+      - name: Upload installer onto job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZitiDesktopEdgeClient-${{ env.VERSION }}
+          path: "Installer/Output/Ziti Desktop Edge Client-*"
+      - name: Job Failure - Upload the signing log job
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SigningLogs
+          path: '**/*AWSSigner.log*'
+      - name: Git Status
+        run: git status
+      - name: git diff
+        run: git diff DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+
