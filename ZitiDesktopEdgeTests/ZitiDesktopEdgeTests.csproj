@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ZitiUpdateService\ZitiUpdateService.csproj" />
+    <ProjectReference Include="..\C8UpdateService\C8UpdateService.csproj" />
   </ItemGroup>
 
   <ItemGroup>

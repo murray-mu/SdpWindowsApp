@@ -32,9 +32,9 @@
     <MapFileExtensions>true</MapFileExtensions>
     <SupportUrl>https://support.netfoundry.io</SupportUrl>
     <TargetCulture>en-US</TargetCulture>
-    <ProductName>Ziti Desktop Edge</ProductName>
+    <ProductName>C8 Edge</ProductName>
     <PublisherName>NetFoundry</PublisherName>
-    <SuiteName>Ziti</SuiteName>
+    <SuiteName>C8</SuiteName>
     <AutorunEnabled>true</AutorunEnabled>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.2.8.%2a</ApplicationVersion>

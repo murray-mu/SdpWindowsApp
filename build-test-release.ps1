@@ -83,7 +83,7 @@ if(! $jsonOnly) {
 }
 
 if($revertGitAfter) {
-  git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+  git checkout C8Edge/Properties/AssemblyInfo.cs C8UpdateService/Properties/AssemblyInfo.cs Installer/C8Edge.aip
 }
 
 Write-Host ""

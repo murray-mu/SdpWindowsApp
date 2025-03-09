@@ -27,7 +27,7 @@ $ADV_INST_VERSION = Get-Content -Path "${checkoutRoot}\adv-inst-version"
 $ADV_INST_HOME = "C:\Program Files (x86)\Caphyon\Advanced Installer ${ADV_INST_VERSION}"
 $SIGNTOOL="${ADV_INST_HOME}\third-party\winsdk\x64\signtool.exe"
 $ADVINST = "${ADV_INST_HOME}\bin\x86\AdvancedInstaller.com"
-$ADVPROJECT = "${scriptPath}\ZitiDesktopEdge.aip"
+$ADVPROJECT = "${scriptPath}\C8Edge.aip"
 $ZITI_EDGE_TUNNEL_VERSION="v1.4.5"
 
 echo "Cleaning previous build folder if it exists"
@@ -101,14 +101,14 @@ if($unzip) {
 }
 
 echo "========================== building and moving the custom signing tool =========================="
-dotnet build -c Release "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj"
-Remove-Item "${scriptPath}\AWSSigner.NET" -Recurse -ErrorAction SilentlyContinue
-$signerTargetDir="${scriptPath}\AWSSigner.NET"
-move "${checkoutRoot}/AWSSigner.NET\bin\Release\" "${signerTargetDir}\"
-$env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
-$env:SIGNTOOL_PATH="${SIGNTOOL}"
+# dotnet build -c Release "${checkoutRoot}/AWSSigner.NET\AWSSigner.NET.csproj"
+# Remove-Item "${scriptPath}\AWSSigner.NET" -Recurse -ErrorAction SilentlyContinue
+# $signerTargetDir="${scriptPath}\AWSSigner.NET"
+# move "${checkoutRoot}/AWSSigner.NET\bin\Release\" "${signerTargetDir}\"
+# $env:SIGNING_CERT="${scriptPath}\GlobalSign-SigningCert-2024-2027.cert"
+# $env:SIGNTOOL_PATH="${SIGNTOOL}"
 
-Push-Location ${checkoutRoot}
+# Push-Location ${checkoutRoot}
 
 if ($version -eq "") {
     $version=(Get-Content -Path ${checkoutRoot}\version)
@@ -118,10 +118,10 @@ echo "Updating the version for UI and Installer"
 .\update-versions.ps1 $version
 
 echo "Restoring the .NET project"
-nuget restore .\ZitiDesktopEdge.sln
+nuget restore .\C8Edge.sln
 
 echo "Building the UI"
-msbuild ZitiDesktopEdge.sln /property:Configuration=Release
+msbuild C8Edge.sln /property:Configuration=Release
 
 Pop-Location
 
@@ -144,7 +144,7 @@ echo "Assembling installer using AdvancedInstaller at: $ADVINST $action $ADVPROJ
 $gituser=$(git config user.name)
 if($gituser -eq "ziti-ci") {
   echo "detected user [${gituser}]"
-  git add DesktopEdge/Properties/AssemblyInfo.cs ZitiDesktopEdge.Client/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+  git add C8Edge/Properties/AssemblyInfo.cs C8Edge.Client/Properties/AssemblyInfo.cs C8UpdateService/Properties/AssemblyInfo.cs Installer/C8Edge.aip
   git commit -m "committing any version changes via ziti-ci"
   git push
 } else {
@@ -164,11 +164,11 @@ $outputPath="${scriptPath}\Output"
 $exeName="Ziti Desktop Edge Client-${version}.exe"
 $exeAbsPath="${outputPath}\${exeName}"
 
-if($null -eq $env:AWS_KEY_ID) {
-    echo ""
-    echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
-    echo ""
-}
+# if($null -eq $env:AWS_KEY_ID) {
+#     echo ""
+#     echo "AWS_KEY_ID not set. __THE BINARY WILL NOT BE SIGNED!__"
+#     echo ""
+# }
 
 if($null -eq $env:OPENZITI_P12_PASS_2024) {
     echo ""
@@ -193,7 +193,7 @@ copy $outputPath "$checkoutRoot\release-streams\beta.json"
 
 
 if($revertGitAfter) {
-  git checkout DesktopEdge/Properties/AssemblyInfo.cs ZitiUpdateService/Properties/AssemblyInfo.cs Installer/ZitiDesktopEdge.aip
+  git checkout C8Edge/Properties/AssemblyInfo.cs C8UpdateService/Properties/AssemblyInfo.cs Installer/C8Edge.aip
 }
 
 
