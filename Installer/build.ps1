@@ -114,8 +114,8 @@ if ($version -eq "") {
     $version=(Get-Content -Path ${checkoutRoot}\version)
 }
 
-echo "Updating the version for UI and Installer"
-.\update-versions.ps1 $version
+# echo "Updating the version for UI and Installer"
+# .\update-versions.ps1 $version
 
 echo "Restoring the .NET project"
 nuget restore .\C8Edge.sln
@@ -170,17 +170,17 @@ $exeAbsPath="${outputPath}\${exeName}"
 #     echo ""
 # }
 
-if($null -eq $env:OPENZITI_P12_PASS_2024) {
-    echo ""
-    echo "Not calling signtool - env:OPENZITI_P12_PASS_2024 is not set"
-    echo ""
-} else {
-    echo "adding additional signature to executable with openziti.org signing certificate"
-    echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature: ${exeAbsPath}"
-    & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://ts.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
-}
+# if($null -eq $env:OPENZITI_P12_PASS_2024) {
+#     echo ""
+#     echo "Not calling signtool - env:OPENZITI_P12_PASS_2024 is not set"
+#     echo ""
+# } else {
+#     echo "adding additional signature to executable with openziti.org signing certificate"
+#     echo "Using ${SIGNTOOL} to sign executable with the additional OpenZiti signature: ${exeAbsPath}"
+#     & "$SIGNTOOL" sign /f "${scriptPath}\openziti_2024.p12" /p "${env:OPENZITI_P12_PASS_2024}" /tr http://timestamp.ssl.com /fd sha512 /td sha512 /as "${exeAbsPath}"
+# }
 
-(Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
+# (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
 
 $outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath -versionQualifier $versionQualifier
