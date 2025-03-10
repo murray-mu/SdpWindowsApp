@@ -161,7 +161,7 @@ Write-Host "============================================"
 Start-Sleep -Seconds $timeout
 
 $outputPath="${scriptPath}\Output"
-$exeName="Ziti Desktop Edge Client-${version}.exe"
+$exeName="C8 Connect Client-${version}.exe"
 $exeAbsPath="${outputPath}\${exeName}"
 
 # if($null -eq $env:AWS_KEY_ID) {
@@ -182,7 +182,7 @@ $exeAbsPath="${outputPath}\${exeName}"
 
 # (Get-FileHash "${exeAbsPath}").Hash > "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.sha256"
 
-$outputPath = "${scriptPath}\Output\Ziti Desktop Edge Client-${version}.exe.json"
+$outputPath = "${scriptPath}\Output\C8 Connect Client-${version}.exe.json"
 & .\Installer\output-build-json.ps1 -version $version -url $url -stream $stream -published_at $published_at -outputPath $outputPath -versionQualifier $versionQualifier
 
 echo "REMOVING .back files: ${scriptPath}\*back*"
